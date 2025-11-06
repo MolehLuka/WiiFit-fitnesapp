@@ -4,8 +4,12 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import routes from './routes';
+import { stripeWebhookHandler } from './routes/billing';
 
 const app = express();
+
+// Webhook must be mounted before JSON parsing to preserve raw body
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler as any);
 
 // Middleware
 app.use(helmet());

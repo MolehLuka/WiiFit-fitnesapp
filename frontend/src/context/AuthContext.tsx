@@ -5,6 +5,7 @@ import type { User } from '@/types/user'
 type AuthContextValue = {
   token: string | null
   user: User | null
+  plan: { id: number; name: string; price: number; currency: string } | null
   isAuthenticated: boolean
   hydrating: boolean
   login: (email: string, password: string) => Promise<void>
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => tokenStore.token)
   const [user, setUser] = useState<User | null>(null)
+  const [plan, setPlan] = useState<{ id: number; name: string; price: number; currency: string } | null>(null)
   const [hydrating, setHydrating] = useState<boolean>(true)
 
   // Sync across tabs
@@ -36,14 +38,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (tokenStore.token) {
           const me = await api.me()
-          if (!cancelled) setUser(me.user)
+          if (!cancelled) {
+            setUser(me.user)
+            setPlan(me.plan ?? null)
+          }
         } else {
-          if (!cancelled) setUser(null)
+          if (!cancelled) { setUser(null); setPlan(null) }
         }
       } catch {
         // token invalid or API unavailable -> clear
         tokenStore.clear()
-        if (!cancelled) setUser(null)
+        if (!cancelled) { setUser(null); setPlan(null) }
       } finally {
         if (!cancelled) setHydrating(false)
       }
@@ -58,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Prefer returned user if present; otherwise fetch
     if (res.user) setUser(res.user)
     else {
-      try { const me = await api.me(); setUser(me.user) } catch { /* ignore */ }
+      try { const me = await api.me(); setUser(me.user); setPlan(me.plan ?? null) } catch { /* ignore */ }
     }
   }, [])
 
@@ -67,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(tokenStore.token)
     if (res.user) setUser(res.user)
     else {
-      try { const me = await api.me(); setUser(me.user) } catch { /* ignore */ }
+      try { const me = await api.me(); setUser(me.user); setPlan(me.plan ?? null) } catch { /* ignore */ }
     }
   }, [])
 
@@ -77,18 +82,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setToken(null)
       setUser(null)
+      setPlan(null)
     }
   }, [])
 
   const value = useMemo<AuthContextValue>(() => ({
     token,
     user,
+    plan,
     isAuthenticated: !!token,
     hydrating,
     login,
     register,
     logout,
-  }), [token, user, hydrating, login, register, logout])
+  }), [token, user, plan, hydrating, login, register, logout])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

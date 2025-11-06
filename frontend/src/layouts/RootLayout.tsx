@@ -16,12 +16,14 @@ export default function RootLayout() {
     <div className="flex min-h-screen flex-col">
       <header className="border-b">
         <div className="container flex h-16 items-center justify-between">
-          <Link to="/" className="font-semibold">WiiFit</Link>
+          <Link to={isAuthenticated ? "/app" : "/"} className="font-semibold">WiiFit</Link>
           <nav className="flex items-center gap-2">
+            <Link to="/plans"><Button variant="ghost">Plans</Button></Link>
             {isAuthenticated ? (
               <>
                 <span className="hidden text-sm text-muted-foreground sm:inline">{user?.full_name || user?.email}</span>
                 <Link to="/app"><Button variant="ghost">App</Button></Link>
+                <Link to="/app/schedule"><Button variant="ghost">Schedule</Button></Link>
                 <Button onClick={onLogout}>Logout</Button>
               </>
             ) : (

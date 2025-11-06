@@ -9,7 +9,8 @@
     "build": "tsc -p .",
     "start": "node dist/server.js",
     "typecheck": "tsc -p . --noEmit",
-    "db:migrate": "node scripts/migrate.js"
+    "db:migrate": "node scripts/migrate.js",
+    "stripe:listen": "stripe listen --forward-to localhost:5000/api/billing/webhook"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -22,7 +23,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "pg": "^8.12.0"
+    "pg": "^8.12.0",
+    "stripe": "^14.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
