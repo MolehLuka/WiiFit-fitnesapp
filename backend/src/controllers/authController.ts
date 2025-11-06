@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { query } from '../db';
-import { isValidEmail, validatePassword } from '../utils/validation';
 import { User } from '../types/user';
 
 function signToken(payload: object, opts?: jwt.SignOptions & { jwtid?: string }) {
@@ -18,15 +17,6 @@ export async function register(req: Request, res: Response) {
   const { email, password, full_name, gender, date_of_birth, height_cm, weight_kg, goal } = req.body as Partial<User> & { password?: string };
   if (!email || !password) {
     return res.status(400).json({ message: 'email and password are required' });
-  }
-
-  // Basic email format and password policy checks
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ message: 'Invalid email format' });
-  }
-  const pwd = validatePassword(password);
-  if (!pwd.valid) {
-    return res.status(400).json({ message: pwd.errors.join(', ') });
   }
 
   const existing = await query<User>(

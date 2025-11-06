@@ -1,25 +1,5 @@
 type LoginBody = { email: string; password: string }
 import type { User } from '@/types/user'
-export type Plan = {
-  name: string
-  price: number
-  currency: string
-  description: string
-  features: string[]
-  highlighted?: boolean
-}
-export type GroupClass = {
-  title: string
-  blurb: string
-}
-export type ClassSession = {
-  id: number
-  starts_at: string
-  duration_min: number
-  capacity: number
-  class_title: string
-  class_blurb: string
-}
 export type RegisterBody = {
   email: string
   password: string
@@ -89,7 +69,7 @@ export const api = {
   async me() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
     const res = await fetch(getBase('/api/protected/me'), { headers })
-    return handle<{ user: User; plan: { id: number; name: string; price: number; currency: string } | null }>(res)
+    return handle<{ user: User }>(res)
   },
   async logout() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
@@ -99,40 +79,5 @@ export const api = {
     })
     await handle(res)
     auth.clear()
-  },
-  async getPlans() {
-    const res = await fetch(getBase('/api/public/plans'))
-    return handle<{ plans: Plan[] }>(res)
-  },
-  async getClasses() {
-    const res = await fetch(getBase('/api/public/classes'))
-    return handle<{ classes: GroupClass[] }>(res)
-  },
-  async subscribePlan(body: { planId?: number; planName?: string }) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
-    const res = await fetch(getBase('/api/protected/subscribe-plan'), {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    })
-    return handle<{ message: string; plan: { id: number; name: string } }>(res)
-  },
-  async createCheckoutSession(body: { planId?: number; planName?: string }) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
-    const res = await fetch(getBase('/api/billing/create-checkout-session'), {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    })
-    return handle<{ url: string }>(res)
-  },
-  async getSchedule(params?: { from?: string; to?: string }) {
-    const qs = new URLSearchParams()
-    if (params?.from) qs.set('from', params.from)
-    if (params?.to) qs.set('to', params.to)
-    const url = `/api/protected/schedule${qs.toString() ? `?${qs.toString()}` : ''}`
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
-    const res = await fetch(getBase(url), { headers })
-    return handle<{ sessions: ClassSession[] }>(res)
   },
 }
