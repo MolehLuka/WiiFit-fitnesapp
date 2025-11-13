@@ -9,6 +9,7 @@ import PlansPage from '@/pages/PlansPage'
 import SchedulePage from '@/pages/SchedulePage'
 import BillingSuccessPage from '@/pages/BillingSuccessPage'
 import BillingCancelPage from '@/pages/BillingCancelPage'
+import MembershipHistoryPage from '@/pages/MembershipHistoryPage'
 
 export const router = createBrowserRouter([
   {
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
     { path: 'billing/cancel', element: <BillingCancelPage /> },
   { path: 'app', element: <RequireAuth><AppPage /></RequireAuth> },
   { path: 'app/schedule', element: <RequireAuth><SchedulePage /></RequireAuth> },
+  { path: 'app/membership', element: <RequireAuth><MembershipHistoryPage /></RequireAuth> },
     ],
   },
 ])

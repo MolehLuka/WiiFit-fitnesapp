@@ -167,3 +167,91 @@ ON CONFLICT (class_id, starts_at) DO NOTHING;
 -- Ensure Stripe columns exist on users
 ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+-- Table to store membership / billing history events (Stripe webhook snapshots)
+CREATE TABLE IF NOT EXISTS membership_events (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL,
+  status TEXT,
+  stripe_object_id TEXT,
+  amount NUMERIC(10,2),
+  currency TEXT,
+  occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  raw JSONB
+);
+CREATE INDEX IF NOT EXISTS idx_membership_events_user_id ON membership_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_membership_events_occurred_at ON membership_events(occurred_at);
+
+-- =========================
+-- Class session bookings
+-- =========================
+CREATE TABLE IF NOT EXISTS bookings (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  session_id INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'booked', -- booked | canceled
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, session_id)
+);
+CREATE INDEX IF NOT EXISTS idx_bookings_session_id ON bookings(session_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);
+
+-- =========================
+-- Personal trainers & availability
+-- =========================
+CREATE TABLE IF NOT EXISTS trainers (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  bio TEXT,
+  max_clients INTEGER NOT NULL DEFAULT 5,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS trainer_availability (
+  id SERIAL PRIMARY KEY,
+  trainer_id INTEGER NOT NULL REFERENCES trainers(id) ON DELETE CASCADE,
+  starts_at TIMESTAMPTZ NOT NULL,
+  duration_min INTEGER NOT NULL DEFAULT 60,
+  capacity INTEGER NOT NULL DEFAULT 5,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (trainer_id, starts_at)
+);
+CREATE INDEX IF NOT EXISTS idx_trainer_availability_starts_at ON trainer_availability(starts_at);
+
+CREATE TABLE IF NOT EXISTS trainer_bookings (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  availability_id INTEGER NOT NULL REFERENCES trainer_availability(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'booked',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, availability_id)
+);
+CREATE INDEX IF NOT EXISTS idx_trainer_bookings_availability_id ON trainer_bookings(availability_id);
+CREATE INDEX IF NOT EXISTS idx_trainer_bookings_user_id ON trainer_bookings(user_id);
+
+-- Seed sample trainers (idempotent)
+INSERT INTO trainers (name, bio, max_clients)
+VALUES
+  ('Alice Strong', 'Strength & conditioning specialist focused on form and progressive overload.', 4),
+  ('Ben Flex', 'Mobility, recovery and hybrid training coach.', 3),
+  ('Cara Cardio', 'Endurance and HIIT programming for fat loss and stamina.', 5)
+ON CONFLICT (name) DO NOTHING;
+
+-- Seed next 5 days availability 09:00 & 17:00 for each trainer (idempotent)
+WITH days AS (
+  SELECT generate_series(0,4) AS d
+), times AS (
+  SELECT unnest(ARRAY['09:00','17:00'])::time AS t
+)
+INSERT INTO trainer_availability (trainer_id, starts_at, duration_min, capacity)
+SELECT tr.id,
+       ((CURRENT_DATE + d)::timestamp + t)::timestamptz,
+       60,
+       LEAST(tr.max_clients, 5)
+FROM trainers tr
+CROSS JOIN days
+CROSS JOIN times
+ON CONFLICT (trainer_id, starts_at) DO NOTHING;

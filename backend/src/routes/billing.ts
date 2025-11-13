@@ -96,6 +96,16 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
             'active',
             userId,
           ]);
+          // Record event
+          await query('INSERT INTO membership_events (user_id, event_type, status, stripe_object_id, amount, currency, raw) VALUES ($1,$2,$3,$4,$5,$6,$7)', [
+            userId,
+            event.type,
+            'active',
+            subscriptionId || session.id,
+            session.amount_total ? session.amount_total / 100 : null,
+            (session.currency || '').toUpperCase() || null,
+            JSON.stringify(session),
+          ]);
         }
         break;
       }
@@ -110,6 +120,17 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
           mapped,
           customerId,
         ]);
+        const userRes = await query<{ id: number }>('SELECT id FROM users WHERE stripe_customer_id = $1', [customerId]);
+        const u = userRes.rows[0];
+        if (u) {
+          await query('INSERT INTO membership_events (user_id, event_type, status, stripe_object_id, raw) VALUES ($1,$2,$3,$4,$5)', [
+            u.id,
+            event.type,
+            mapped,
+            sub.id,
+            JSON.stringify(sub),
+          ]);
+        }
         break;
       }
       case 'customer.subscription.deleted': {
@@ -119,6 +140,17 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
           'canceled',
           customerId,
         ]);
+        const userRes = await query<{ id: number }>('SELECT id FROM users WHERE stripe_customer_id = $1', [customerId]);
+        const u = userRes.rows[0];
+        if (u) {
+          await query('INSERT INTO membership_events (user_id, event_type, status, stripe_object_id, raw) VALUES ($1,$2,$3,$4,$5)', [
+            u.id,
+            event.type,
+            'canceled',
+            sub.id,
+            JSON.stringify(sub),
+          ]);
+        }
         break;
       }
       case 'invoice.payment_failed': {
@@ -128,6 +160,37 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
           'past_due',
           customerId,
         ]);
+        const userRes = await query<{ id: number }>('SELECT id FROM users WHERE stripe_customer_id = $1', [customerId]);
+        const u = userRes.rows[0];
+        if (u) {
+          await query('INSERT INTO membership_events (user_id, event_type, status, stripe_object_id, amount, currency, raw) VALUES ($1,$2,$3,$4,$5,$6,$7)', [
+            u.id,
+            event.type,
+            'past_due',
+            invoice.id,
+            invoice.total ? invoice.total / 100 : null,
+            (invoice.currency || '').toUpperCase() || null,
+            JSON.stringify(invoice),
+          ]);
+        }
+        break;
+      }
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+        const userRes = await query<{ id: number }>('SELECT id FROM users WHERE stripe_customer_id = $1', [customerId]);
+        const u = userRes.rows[0];
+        if (u) {
+          await query('INSERT INTO membership_events (user_id, event_type, status, stripe_object_id, amount, currency, raw) VALUES ($1,$2,$3,$4,$5,$6,$7)', [
+            u.id,
+            event.type,
+            'active',
+            invoice.id,
+            invoice.total ? invoice.total / 100 : null,
+            (invoice.currency || '').toUpperCase() || null,
+            JSON.stringify(invoice),
+          ]);
+        }
         break;
       }
       default:
@@ -140,3 +203,36 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
     res.status(500).send('Webhook handler error');
   }
 }
+
+  // POST /api/billing/cancel-subscription { mode?: 'immediate' | 'period_end' }
+  billingRoutes.post('/cancel-subscription', requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+      const userId = res.locals.userId as number;
+      const mode = (req.body?.mode as 'immediate' | 'period_end' | undefined) || 'period_end';
+      const userRes = await query<{ stripe_subscription_id: string | null }>('SELECT stripe_subscription_id FROM users WHERE id = $1', [userId]);
+      const u = userRes.rows[0];
+      if (!u || !u.stripe_subscription_id) return res.status(400).json({ message: 'No active subscription to cancel' });
+      let updated: Stripe.Subscription;
+      if (mode === 'immediate') {
+        updated = await stripe.subscriptions.cancel(u.stripe_subscription_id);
+      } else {
+        updated = await stripe.subscriptions.update(u.stripe_subscription_id, { cancel_at_period_end: true });
+      }
+      const mapped = updated.status === 'active' || updated.status === 'trialing' ? 'active' : (updated.status === 'past_due' || updated.status === 'unpaid' ? 'past_due' : updated.status);
+      // For immediate cancellation mark canceled; for period_end keep active until Stripe webhook changes later
+      const newStatus = mode === 'immediate' ? 'canceled' : mapped;
+      await query('UPDATE users SET membership_status = $1, updated_at = now() WHERE id = $2', [newStatus, userId]);
+      await query('INSERT INTO membership_events (user_id, event_type, status, stripe_object_id, raw) VALUES ($1,$2,$3,$4,$5)', [
+        userId,
+        mode === 'immediate' ? 'app.subscription.cancelled_immediate' : 'app.subscription.cancel_requested',
+        newStatus,
+        updated.id,
+        JSON.stringify(updated),
+      ]);
+      res.json({ message: 'Cancellation processed', status: newStatus, mode });
+    } catch (err) {
+      console.error('[billing/cancel-subscription] error', err);
+      res.status(500).json({ message: 'Failed to cancel subscription' });
+    }
+  });

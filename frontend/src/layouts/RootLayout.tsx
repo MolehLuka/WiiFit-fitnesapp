@@ -24,6 +24,7 @@ export default function RootLayout() {
                 <span className="hidden text-sm text-muted-foreground sm:inline">{user?.full_name || user?.email}</span>
                 <Link to="/app"><Button variant="ghost">App</Button></Link>
                 <Link to="/app/schedule"><Button variant="ghost">Schedule</Button></Link>
+                <Link to="/app/membership"><Button variant="ghost">Membership</Button></Link>
                 <Button onClick={onLogout}>Logout</Button>
               </>
             ) : (

@@ -32,6 +32,7 @@ protectedRoutes.get('/me', requireAuth, async (_req: Request, res: Response) => 
 export default protectedRoutes;
 // GET /api/protected/schedule?from=ISO&to=ISO
 protectedRoutes.get('/schedule', requireAuth, async (req: Request, res: Response) => {
+  const userId = res.locals.userId as number;
   const { from, to } = req.query as { from?: string; to?: string };
   let where = '';
   const params: any[] = [];
@@ -51,13 +52,21 @@ protectedRoutes.get('/schedule', requireAuth, async (req: Request, res: Response
         cs.duration_min,
         cs.capacity,
         gc.title AS class_title,
-        gc.blurb AS class_blurb
+        gc.blurb AS class_blurb,
+        (
+          SELECT COUNT(*) FROM bookings b
+          WHERE b.session_id = cs.id AND b.status = 'booked'
+        ) AS booked_count,
+        (
+          SELECT COUNT(*) FROM bookings b
+          WHERE b.session_id = cs.id AND b.user_id = $${params.length + 1} AND b.status = 'booked'
+        ) AS user_has_booking
       FROM class_sessions cs
       JOIN group_classes gc ON gc.id = cs.class_id
       ${where}
       ORDER BY cs.starts_at ASC
     `;
-    const result = await query(sql, params);
+    const result = await query(sql, [...params, userId]);
     res.json({ sessions: result.rows });
   } catch (err) {
     console.error('[protected/schedule] error', err);
@@ -94,5 +103,106 @@ protectedRoutes.post('/subscribe-plan', requireAuth, async (req: Request, res: R
   } catch (err) {
     console.error('[protected/subscribe-plan] error', err);
     return res.status(500).json({ message: 'Failed to subscribe to plan' });
+  }
+});
+
+// Book a class session
+protectedRoutes.post('/sessions/:id/book', requireAuth, async (req: Request, res: Response) => {
+  const userId = res.locals.userId as number;
+  const sessionId = Number(req.params.id);
+  if (isNaN(sessionId)) return res.status(400).json({ message: 'Invalid session id' });
+  try {
+    // Fetch session + current booked count
+    const r = await query<{
+      id: number;
+      capacity: number;
+      starts_at: string;
+      booked_count: number;
+    }>(
+      `SELECT cs.id, cs.capacity, cs.starts_at,
+        (SELECT COUNT(*) FROM bookings b WHERE b.session_id = cs.id AND b.status='booked') AS booked_count
+       FROM class_sessions cs WHERE cs.id = $1`,
+      [sessionId]
+    );
+    const s = r.rows[0];
+    if (!s) return res.status(404).json({ message: 'Session not found' });
+    if (new Date(s.starts_at) < new Date()) return res.status(400).json({ message: 'Cannot book past session' });
+    if (s.booked_count >= s.capacity) return res.status(409).json({ message: 'Session full' });
+    // Attempt insert (unique constraint prevents double booking)
+    try {
+      await query('INSERT INTO bookings (user_id, session_id) VALUES ($1,$2) ON CONFLICT (user_id, session_id) DO NOTHING', [userId, sessionId]);
+    } catch (err) {
+      console.error('[sessions/:id/book] insert error', err);
+      return res.status(500).json({ message: 'Failed to book' });
+    }
+    res.json({ message: 'Booked' });
+  } catch (err) {
+    console.error('[sessions/:id/book] error', err);
+    res.status(500).json({ message: 'Failed to book session' });
+  }
+});
+
+// Cancel a booking
+protectedRoutes.post('/sessions/:id/cancel', requireAuth, async (req: Request, res: Response) => {
+  const userId = res.locals.userId as number;
+  const sessionId = Number(req.params.id);
+  if (isNaN(sessionId)) return res.status(400).json({ message: 'Invalid session id' });
+  try {
+    // Ensure booking exists and session not started
+    const r = await query<{
+      starts_at: string;
+    }>(
+      `SELECT cs.starts_at FROM class_sessions cs WHERE cs.id = $1`,
+      [sessionId]
+    );
+    const s = r.rows[0];
+    if (!s) return res.status(404).json({ message: 'Session not found' });
+    if (new Date(s.starts_at) < new Date()) return res.status(400).json({ message: 'Cannot cancel past session' });
+    await query('UPDATE bookings SET status = ' + "'canceled'" + ' WHERE user_id = $1 AND session_id = $2 AND status = ' + "'booked'", [userId, sessionId]);
+    res.json({ message: 'Canceled' });
+  } catch (err) {
+    console.error('[sessions/:id/cancel] error', err);
+    res.status(500).json({ message: 'Failed to cancel booking' });
+  }
+});
+
+// User bookings list
+protectedRoutes.get('/bookings', requireAuth, async (_req: Request, res: Response) => {
+  const userId = res.locals.userId as number;
+  try {
+    const r = await query<any>(
+      `SELECT b.id, b.session_id, b.status, b.created_at,
+              cs.starts_at, cs.duration_min, gc.title AS class_title
+       FROM bookings b
+       JOIN class_sessions cs ON cs.id = b.session_id
+       JOIN group_classes gc ON gc.id = cs.class_id
+       WHERE b.user_id = $1 AND b.status='booked'
+       ORDER BY cs.starts_at ASC`,
+      [userId]
+    );
+    res.json({ bookings: r.rows });
+  } catch (err) {
+    console.error('[bookings] error', err);
+    res.status(500).json({ message: 'Failed to load bookings' });
+  }
+});
+
+// GET /api/protected/membership/history
+protectedRoutes.get('/membership/history', requireAuth, async (_req: Request, res: Response) => {
+  const userId = res.locals.userId as number | undefined;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    const result = await query<any>(
+      `SELECT id, event_type, status, stripe_object_id, amount::float, currency, occurred_at
+       FROM membership_events
+       WHERE user_id = $1
+       ORDER BY occurred_at DESC
+       LIMIT 200`,
+      [userId]
+    );
+    res.json({ events: result.rows });
+  } catch (err) {
+    console.error('[protected/membership/history] error', err);
+    res.status(500).json({ message: 'Failed to load membership history' });
   }
 });

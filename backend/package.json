@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "typecheck": "tsc -p . --noEmit",
     "db:migrate": "node scripts/migrate.js",
-    "stripe:listen": "stripe listen --forward-to localhost:5000/api/billing/webhook"
+  "stripe:listen": "stripe listen --forward-to localhost:4000/api/billing/webhook"
   },
   "engines": {
     "node": ">=18.0.0"

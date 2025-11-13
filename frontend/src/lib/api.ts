@@ -19,6 +19,8 @@ export type ClassSession = {
   capacity: number
   class_title: string
   class_blurb: string
+  booked_count?: number
+  user_has_booking?: number
 }
 export type RegisterBody = {
   email: string
@@ -134,5 +136,48 @@ export const api = {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
     const res = await fetch(getBase(url), { headers })
     return handle<{ sessions: ClassSession[] }>(res)
+  },
+  async getMembershipHistory() {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase('/api/protected/membership/history'), { headers })
+    return handle<{ events: Array<{ id: number; event_type: string; status: string | null; stripe_object_id: string | null; amount: number | null; currency: string | null; occurred_at: string }> }>(res)
+  },
+  async cancelSubscription(mode: 'immediate' | 'period_end' = 'period_end') {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase('/api/billing/cancel-subscription'), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ mode }),
+    })
+    return handle<{ message: string; status: string; mode: string }>(res)
+  },
+  async bookSession(sessionId: number) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase(`/api/protected/sessions/${sessionId}/book`), { method: 'POST', headers })
+    return handle<{ message: string }>(res)
+  },
+  async cancelSession(sessionId: number) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase(`/api/protected/sessions/${sessionId}/cancel`), { method: 'POST', headers })
+    return handle<{ message: string }>(res)
+  },
+  async getTrainerAvailability(params?: { from?: string; to?: string }) {
+    const qs = new URLSearchParams()
+    if (params?.from) qs.set('from', params.from)
+    if (params?.to) qs.set('to', params.to)
+    const url = `/api/trainers/availability${qs.toString() ? `?${qs.toString()}` : ''}`
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase(url), { headers })
+    return handle<{ availability: Array<{ id: number; trainer_id: number; trainer_name: string; trainer_bio: string; starts_at: string; duration_min: number; capacity: number; booked_count: number; user_has_booking: number }> }>(res)
+  },
+  async bookTrainerSlot(id: number) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase(`/api/trainers/availability/${id}/book`), { method: 'POST', headers })
+    return handle<{ message: string }>(res)
+  },
+  async cancelTrainerSlot(id: number) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase(`/api/trainers/availability/${id}/cancel`), { method: 'POST', headers })
+    return handle<{ message: string }>(res)
   },
 }

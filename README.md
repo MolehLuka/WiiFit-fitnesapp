@@ -24,7 +24,7 @@ npm run dev
 
 ```powershell
 cd ../frontend
-Copy-Item .env.example .env  # optional; defaults proxy to http://localhost:5000
+Copy-Item .env.example .env  # optional; defaults proxy to http://localhost:4000
 npm install
 npm run dev
 ```
@@ -41,7 +41,7 @@ Open http://localhost:5173
 
 ```powershell
 # New terminal
-stripe listen --forward-to localhost:5000/api/billing/webhook
+stripe listen --forward-to localhost:4000/api/billing/webhook
 # Copy the whsec_ secret and set STRIPE_WEBHOOK_SECRET in backend/.env, then restart backend
 ```
 

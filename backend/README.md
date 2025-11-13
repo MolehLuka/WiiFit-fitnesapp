@@ -153,7 +153,7 @@ Use your DB client or psql:
 - In a new terminal, forward events to your webhook and capture the secret:
 
 ```powershell
-stripe listen --forward-to localhost:5000/api/billing/webhook
+stripe listen --forward-to localhost:4000/api/billing/webhook
 # Copy the "webhook signing secret" it prints (whsec_...), then set STRIPE_WEBHOOK_SECRET in .env
 ```
 
