@@ -11,6 +11,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>
   register: (data: { email: string; password: string; full_name?: string }) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -86,6 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    if (!tokenStore.token) return
+    try {
+      const me = await api.me()
+      setUser(me.user)
+      setPlan(me.plan ?? null)
+    } catch (err) {
+      console.error('Failed to refresh user:', err)
+    }
+  }, [])
+
   const value = useMemo<AuthContextValue>(() => ({
     token,
     user,
@@ -95,7 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     logout,
-  }), [token, user, plan, hydrating, login, register, logout])
+    refreshUser,
+  }), [token, user, plan, hydrating, login, register, logout, refreshUser])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

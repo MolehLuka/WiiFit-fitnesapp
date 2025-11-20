@@ -148,11 +148,11 @@ CREATE TABLE IF NOT EXISTS class_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_class_sessions_starts_at ON class_sessions (starts_at);
 
--- Seed sessions for next 7 days at 08:00 and 18:00 (idempotent)
+-- Seed sessions for next 30 days at multiple times (idempotent)
 WITH days AS (
-  SELECT generate_series(0,6) AS d
+  SELECT generate_series(0,29) AS d
 ), times AS (
-  SELECT unnest(ARRAY['08:00', '18:00'])::time AS t
+  SELECT unnest(ARRAY['06:00', '08:00', '10:00', '12:00', '16:00', '18:00', '20:00'])::time AS t
 )
 INSERT INTO class_sessions (class_id, starts_at, duration_min, capacity)
 SELECT gc.id,
@@ -240,11 +240,11 @@ VALUES
   ('Cara Cardio', 'Endurance and HIIT programming for fat loss and stamina.', 5)
 ON CONFLICT (name) DO NOTHING;
 
--- Seed next 5 days availability 09:00 & 17:00 for each trainer (idempotent)
+-- Seed next 30 days availability at multiple times for each trainer (idempotent)
 WITH days AS (
-  SELECT generate_series(0,4) AS d
+  SELECT generate_series(0,29) AS d
 ), times AS (
-  SELECT unnest(ARRAY['09:00','17:00'])::time AS t
+  SELECT unnest(ARRAY['07:00','09:00','11:00','14:00','17:00','19:00'])::time AS t
 )
 INSERT INTO trainer_availability (trainer_id, starts_at, duration_min, capacity)
 SELECT tr.id,

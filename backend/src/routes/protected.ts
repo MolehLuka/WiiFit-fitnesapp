@@ -128,12 +128,21 @@ protectedRoutes.post('/sessions/:id/book', requireAuth, async (req: Request, res
     if (!s) return res.status(404).json({ message: 'Session not found' });
     if (new Date(s.starts_at) < new Date()) return res.status(400).json({ message: 'Cannot book past session' });
     if (s.booked_count >= s.capacity) return res.status(409).json({ message: 'Session full' });
-    // Attempt insert (unique constraint prevents double booking)
-    try {
-      await query('INSERT INTO bookings (user_id, session_id) VALUES ($1,$2) ON CONFLICT (user_id, session_id) DO NOTHING', [userId, sessionId]);
-    } catch (err) {
-      console.error('[sessions/:id/book] insert error', err);
-      return res.status(500).json({ message: 'Failed to book' });
+    // Check if user already has an active booking
+    const existingBooking = await query(
+      `SELECT id, status FROM bookings WHERE user_id = $1 AND session_id = $2`,
+      [userId, sessionId]
+    );
+    if (existingBooking.rows.length > 0) {
+      const booking = existingBooking.rows[0] as { id: number; status: string };
+      if (booking.status === 'booked') {
+        return res.status(409).json({ message: 'Already booked' });
+      }
+      // Reactivate canceled booking
+      await query(`UPDATE bookings SET status = 'booked' WHERE id = $1`, [booking.id]);
+    } else {
+      // Create new booking
+      await query('INSERT INTO bookings (user_id, session_id, status) VALUES ($1, $2, $3)', [userId, sessionId, 'booked']);
     }
     res.json({ message: 'Booked' });
   } catch (err) {
@@ -170,9 +179,11 @@ protectedRoutes.post('/sessions/:id/cancel', requireAuth, async (req: Request, r
 protectedRoutes.get('/bookings', requireAuth, async (_req: Request, res: Response) => {
   const userId = res.locals.userId as number;
   try {
-    const r = await query<any>(
+    const classBookings = await query<any>(
       `SELECT b.id, b.session_id, b.status, b.created_at,
-              cs.starts_at, cs.duration_min, gc.title AS class_title
+              cs.starts_at, cs.duration_min, cs.capacity,
+              gc.id as class_id, gc.title AS class_title, gc.blurb as class_blurb,
+              'class' as booking_type
        FROM bookings b
        JOIN class_sessions cs ON cs.id = b.session_id
        JOIN group_classes gc ON gc.id = cs.class_id
@@ -180,7 +191,24 @@ protectedRoutes.get('/bookings', requireAuth, async (_req: Request, res: Respons
        ORDER BY cs.starts_at ASC`,
       [userId]
     );
-    res.json({ bookings: r.rows });
+    
+    const trainerBookings = await query<any>(
+      `SELECT tb.id, tb.availability_id, tb.status, tb.created_at,
+              ta.starts_at, ta.duration_min, ta.capacity,
+              t.id as trainer_id, t.name as trainer_name, t.bio as trainer_bio,
+              'trainer' as booking_type
+       FROM trainer_bookings tb
+       JOIN trainer_availability ta ON ta.id = tb.availability_id
+       JOIN trainers t ON t.id = ta.trainer_id
+       WHERE tb.user_id = $1 AND tb.status='booked'
+       ORDER BY ta.starts_at ASC`,
+      [userId]
+    );
+    
+    res.json({ 
+      classBookings: classBookings.rows,
+      trainerBookings: trainerBookings.rows 
+    });
   } catch (err) {
     console.error('[bookings] error', err);
     res.status(500).json({ message: 'Failed to load bookings' });

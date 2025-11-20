@@ -116,14 +116,14 @@ export default function PlansPage() {
     return currencyFormatters.get(curr)!.format(amount)
   }
   return (
-    <div className="mx-auto max-w-5xl space-y-16">
-      <section className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">Membership plans</h1>
-        <p className="text-muted-foreground">
+    <div className="mx-auto max-w-6xl space-y-12 px-4 py-8">
+      <section className="text-center space-y-4">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Membership Plans</h1>
+        <p className="text-muted-foreground text-lg">
           Choose the plan that fits your goals. You can upgrade or cancel anytime.
         </p>
         {error && (
-          <p className="text-xs text-amber-600">{error}</p>
+          <p className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg inline-block">{error}</p>
         )}
       </section>
 
@@ -131,34 +131,36 @@ export default function PlansPage() {
         {(plans ?? defaultPlans).map((p) => (
           <Card
             key={p.name}
-            className={(p.highlighted ? 'border-primary ' : '') + 'transition hover:shadow-lg'}
+            className={(p.highlighted ? 'border-2 border-blue-500 shadow-lg scale-105 ' : 'border border-gray-200 dark:border-gray-700 ') + 'transition-all hover:shadow-xl bg-white dark:bg-gray-900'}
           >
             <CardHeader>
               <CardTitle className="flex items-baseline justify-between">
                 <span className="flex items-center gap-2">
-                  {p.name === 'Basic' && <Dumbbell className="h-4 w-4" />}
-                  {p.name === 'Plus' && <Star className="h-4 w-4" />}
-                  {p.name === 'Pro' && <Crown className="h-4 w-4" />}
-                  {p.name}
+                  {p.name === 'Basic' && <Dumbbell className="h-5 w-5 text-blue-500" />}
+                  {p.name === 'Plus' && <Star className="h-5 w-5 text-purple-500" />}
+                  {p.name === 'Pro' && <Crown className="h-5 w-5 text-yellow-500" />}
+                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{p.name}</span>
                 </span>
-                <span className="text-2xl font-semibold">
+                <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   {formatPrice(p.price, p.currency)}
                   <span className="text-sm font-normal text-muted-foreground">/mo</span>
                 </span>
               </CardTitle>
-              <CardDescription>{p.description}</CardDescription>
+              <CardDescription className="text-base">{p.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="list-disc space-y-1 pl-5 text-sm">
+              <ul className="space-y-2 text-sm">
                 {p.features.map((f) => (
-                  <li key={f}>{f}</li>
+                  <li key={f} className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span>{f}</span>
+                  </li>
                 ))}
               </ul>
             </CardContent>
             <CardFooter>
               <Button
-                className="w-full"
-                variant={p.highlighted ? 'default' : 'secondary'}
+                className={`w-full font-semibold ${p.highlighted ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' : 'bg-gray-600 hover:bg-gray-700'}`}
                 onClick={async () => {
                   setSubscribeMsg(null)
                   if (!isAuthenticated) {
@@ -180,25 +182,25 @@ export default function PlansPage() {
         ))}
       </section>
 
-      <section className="space-y-6">
+      <section className="space-y-8">
         {subscribeMsg && (
-          <p className="text-sm text-center text-emerald-700">{subscribeMsg}</p>
+          <p className="text-sm text-center text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-lg">{subscribeMsg}</p>
         )}
-        <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-semibold">Group workout options</h2>
-          <p className="text-muted-foreground">
+        <div className="space-y-3 text-center">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Group Workout Options</h2>
+          <p className="text-muted-foreground text-lg">
             Stay motivated and push further with our coach-led classes for every level.
           </p>
           {classesError && (
-            <p className="text-xs text-amber-600">{classesError}</p>
+            <p className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg inline-block">{classesError}</p>
           )}
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {(classes ?? defaultGroupOptions).map((g) => (
-            <Card key={g.title}>
+            <Card key={g.title} className="border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow bg-white dark:bg-gray-900">
               <CardHeader>
-                <CardTitle>{g.title}</CardTitle>
-                <CardDescription>{g.blurb}</CardDescription>
+                <CardTitle className="text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{g.title}</CardTitle>
+                <CardDescription className="text-base">{g.blurb}</CardDescription>
               </CardHeader>
             </Card>
           ))}

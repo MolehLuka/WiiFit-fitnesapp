@@ -74,7 +74,22 @@ trainersRoutes.post('/availability/:id/book', requireAuth, async (req: Request, 
     if (!a) return res.status(404).json({ message: 'Slot not found' });
     if (new Date(a.starts_at) < new Date()) return res.status(400).json({ message: 'Cannot book past slot' });
     if (a.booked_count >= a.capacity) return res.status(409).json({ message: 'Slot full' });
-    await query('INSERT INTO trainer_bookings (user_id, availability_id) VALUES ($1,$2) ON CONFLICT (user_id, availability_id) DO NOTHING', [userId, availId]);
+    // Check if user already has a booking for this slot
+    const existingBooking = await query(
+      `SELECT id, status FROM trainer_bookings WHERE user_id = $1 AND availability_id = $2`,
+      [userId, availId]
+    );
+    if (existingBooking.rows.length > 0) {
+      const booking = existingBooking.rows[0] as { id: number; status: string };
+      if (booking.status === 'booked') {
+        return res.status(409).json({ message: 'Already booked' });
+      }
+      // Reactivate canceled booking
+      await query(`UPDATE trainer_bookings SET status = 'booked' WHERE id = $1`, [booking.id]);
+    } else {
+      // Create new booking
+      await query('INSERT INTO trainer_bookings (user_id, availability_id, status) VALUES ($1, $2, $3)', [userId, availId, 'booked']);
+    }
     res.json({ message: 'Booked trainer slot' });
   } catch (err) {
     console.error('[availability/:id/book] error', err);

@@ -180,4 +180,36 @@ export const api = {
     const res = await fetch(getBase(`/api/trainers/availability/${id}/cancel`), { method: 'POST', headers })
     return handle<{ message: string }>(res)
   },
+  async getBookings() {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase('/api/protected/bookings'), { headers })
+    return handle<{ 
+      classBookings: Array<{
+        id: number
+        session_id: number
+        status: string
+        created_at: string
+        starts_at: string
+        duration_min: number
+        capacity: number
+        class_id: number
+        class_title: string
+        class_blurb: string
+        booking_type: 'class'
+      }>
+      trainerBookings: Array<{
+        id: number
+        availability_id: number
+        status: string
+        created_at: string
+        starts_at: string
+        duration_min: number
+        capacity: number
+        trainer_id: number
+        trainer_name: string
+        trainer_bio: string
+        booking_type: 'trainer'
+      }>
+    }>(res)
+  },
 }
