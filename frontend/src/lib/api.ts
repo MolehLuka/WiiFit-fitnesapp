@@ -212,4 +212,37 @@ export const api = {
       }>
     }>(res)
   },
+  
+  // Admin endpoints
+  async getAdminClasses() {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase('/api/admin/classes'), { headers })
+    return handle<{ classes: Array<{ id: number; title: string; blurb: string; created_at: string; updated_at: string }> }>(res)
+  },
+  async createClass(body: { title: string; blurb?: string }) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase('/api/admin/classes'), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+    return handle<{ class: { id: number; title: string; blurb: string; created_at: string; updated_at: string } }>(res)
+  },
+  async updateClass(id: number, body: { title: string; blurb?: string }) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase(`/api/admin/classes/${id}`), {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    })
+    return handle<{ class: { id: number; title: string; blurb: string; created_at: string; updated_at: string } }>(res)
+  },
+  async deleteClass(id: number) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...auth.header() }
+    const res = await fetch(getBase(`/api/admin/classes/${id}`), {
+      method: 'DELETE',
+      headers,
+    })
+    return handle<{ message: string }>(res)
+  },
 }

@@ -11,7 +11,7 @@ protectedRoutes.get('/me', requireAuth, async (_req: Request, res: Response) => 
 
   const result = await query(
     `SELECT u.id, u.email, u.full_name, u.gender, u.date_of_birth, u.height_cm, u.weight_kg, u.goal,
-            u.membership_status, u.created_at, u.updated_at,
+            u.membership_status, u.is_admin, u.created_at, u.updated_at,
             u.plan_id,
             p.id as plan_id_resolved, p.name as plan_name, p.price::float as plan_price, p.currency as plan_currency
      FROM users u

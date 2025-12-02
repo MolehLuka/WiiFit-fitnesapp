@@ -8,6 +8,7 @@ export interface User {
   weight_kg: number | null;
   goal: string | null;
   membership_status: string | null;
+  is_admin: boolean;
   password_hash?: string; // never send this in responses
   created_at: string; // ISO string
   updated_at: string; // ISO string

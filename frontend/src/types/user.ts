@@ -8,6 +8,7 @@ export type User = {
   weight_kg: number | null
   goal: string | null
   membership_status: string | null
+  is_admin: boolean
   created_at: string
   updated_at: string
 }

@@ -42,7 +42,7 @@ export async function register(req: Request, res: Response) {
     `INSERT INTO users (
       email, password_hash, full_name, gender, date_of_birth, height_cm, weight_kg, goal, membership_status
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
-    RETURNING id, email, full_name, gender, date_of_birth, height_cm, weight_kg, goal, membership_status, created_at, updated_at`,
+    RETURNING id, email, full_name, gender, date_of_birth, height_cm, weight_kg, goal, membership_status, is_admin, created_at, updated_at`,
     [
       email.toLowerCase(),
       password_hash,
@@ -68,7 +68,7 @@ export async function login(req: Request, res: Response) {
   }
 
   const found = await query<Required<User>>(
-    'SELECT id, email, full_name, gender, date_of_birth, height_cm, weight_kg, goal, membership_status, created_at, updated_at, password_hash FROM users WHERE email = $1',
+    'SELECT id, email, full_name, gender, date_of_birth, height_cm, weight_kg, goal, membership_status, is_admin, created_at, updated_at, password_hash FROM users WHERE email = $1',
     [email.toLowerCase()]
   );
   if (found.rows.length === 0) {
