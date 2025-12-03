@@ -43,6 +43,13 @@ export default function RootLayout() {
                 <Link to="/app/membership">
                   <Button variant="ghost" className="hover:bg-purple-50 dark:hover:bg-purple-900/20">Membership</Button>
                 </Link>
+                {user?.is_admin && (
+                  <Link to="/app/admin">
+                    <Button variant="ghost" className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 text-blue-600 dark:text-blue-400 font-semibold">
+                      Admin
+                    </Button>
+                  </Link>
+                )}
                 <Button 
                   onClick={onLogout}
                   className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"

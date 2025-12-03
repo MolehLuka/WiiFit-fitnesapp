@@ -11,6 +11,7 @@ import BillingSuccessPage from '@/pages/BillingSuccessPage'
 import BillingCancelPage from '@/pages/BillingCancelPage'
 import MembershipHistoryPage from '@/pages/MembershipHistoryPage'
 import ProfilePage from '@/pages/ProfilePage'
+import AdminClassesPage from '@/pages/AdminClassesPage'
 
 export const router = createBrowserRouter([
   {
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
   { path: 'app/schedule', element: <RequireAuth><SchedulePage /></RequireAuth> },
   { path: 'app/membership', element: <RequireAuth><MembershipHistoryPage /></RequireAuth> },
   { path: 'app/profile', element: <RequireAuth><ProfilePage /></RequireAuth> },
+  { path: 'app/admin', element: <RequireAuth><AdminClassesPage /></RequireAuth> },
     ],
   },
 ])
