@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 describe('Backend Utils Tests', () => {
-  // Password validation tests (3 tests)
   describe('Password Validation', () => {
     test('should accept valid password', () => {
       const result = validatePassword('Password123!');
@@ -24,7 +23,6 @@ describe('Backend Utils Tests', () => {
     });
   });
 
-  // Email validation tests (2 tests)
   describe('Email Validation', () => {
     test('should accept valid email', () => {
       expect(isValidEmail('test@example.com')).toBe(true);
@@ -35,7 +33,6 @@ describe('Backend Utils Tests', () => {
     });
   });
 
-  // Password hashing tests (2 tests)
   describe('Password Hashing', () => {
     test('should hash password successfully', async () => {
       const password = 'TestPassword123';
@@ -52,7 +49,6 @@ describe('Backend Utils Tests', () => {
     });
   });
 
-  // JWT tests (3 tests)
   describe('JWT Operations', () => {
     const SECRET = 'test-secret-key';
 
