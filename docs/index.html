@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiiFit Fitness App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .owner {
+            color: #666;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        
+        .description {
+            color: #333;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+        
+        .links {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .features {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 2px solid #f0f0f0;
+        }
+        
+        .features h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .features ul {
+            list-style: none;
+            color: #555;
+        }
+        
+        .features li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WiiFit Fitness App</h1>
+        <p class="owner">by Luka Moleh</p>
+        
+        <div class="description">
+            <p>
+                A comprehensive fitness application that helps users manage their workout routines, 
+                track their progress, and achieve their fitness goals. Built with modern web technologies, 
+                WiiFit offers a seamless experience for booking classes, scheduling personal training 
+                sessions, and managing fitness memberships.
+            </p>
+        </div>
+        
+        <div class="links">
+            <a href="https://wii-fit-fitnesapp.vercel.app" class="btn" target="_blank">Visit App</a>
+            <a href="https://github.com/MolehLuka/WiiFit-fitnesapp" class="btn" target="_blank">View on GitHub</a>
+        </div>
+        
+        <div class="features">
+            <h2>Key Features</h2>
+            <ul>
+                <li>User authentication and profile management</li>
+                <li>Group fitness class booking system</li>
+                <li>Personal trainer scheduling and availability</li>
+                <li>Membership plans with Stripe integration</li>
+                <li>Admin dashboard for class management</li>
+                <li>Responsive design for all devices</li>
+            </ul>
+        </div>
+        
+        <div class="features">
+            <h2>Technology Stack</h2>
+            <ul>
+                <li>Frontend: React + TypeScript + Vite + Tailwind CSS</li>
+                <li>Backend: Node.js + Express + PostgreSQL</li>
+                <li>Deployment: Vercel (Frontend) + Render (Backend)</li>
+                <li>CI/CD: GitHub Actions with automated testing</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
